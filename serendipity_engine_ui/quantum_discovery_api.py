@@ -195,19 +195,36 @@ async def search_pipeline_stream(request: SearchRequest):
                 # Start validation for this result
                 yield f"data: {json.dumps({'type': 'validation_start', 'index': i})}\n\n"
                 
-                stream = phase3_gemini_validation_stream(request.query, profile, gemini_model)
+                try:
+                    stream = phase3_gemini_validation_stream(request.query, profile, gemini_model)
+                except Exception as e:
+                    print(f"Gemini API error for profile {i}: {str(e)}")
+                    yield f"data: {json.dumps({'type': 'validation_complete', 'index': i, 'status': 'error', 'error': str(e)})}\n\n"
+                    continue
                 
                 if stream:
                     full_response = ""
+                    reason_started = False
+                    last_sent_length = 0
+                    
+                    print(f"Starting Gemini validation for profile {i}: {profile.get('name', 'Unknown')}")
+                    
                     for chunk in stream:
                         if chunk.text:
                             full_response += chunk.text
                             
-                            # Stream explanation updates
+                            # Stream explanation updates incrementally
                             if "REASON:" in full_response:
+                                if not reason_started:
+                                    reason_started = True
+                                
                                 reason_text = full_response.split("REASON:")[-1].strip()
-                                yield f"data: {json.dumps({'type': 'explanation_update', 'index': i, 'text': reason_text})}\n\n"
-                                await asyncio.sleep(0.05)  # Throttle streaming to prevent overwhelming client
+                                
+                                # Only send if we have new text
+                                if len(reason_text) > last_sent_length:
+                                    yield f"data: {json.dumps({'type': 'explanation_update', 'index': i, 'text': reason_text})}\n\n"
+                                    last_sent_length = len(reason_text)
+                                    await asyncio.sleep(0.05)  # Throttle streaming to prevent overwhelming client
                     
                     # Determine if it's a match
                     is_match = "MATCH: YES" in full_response

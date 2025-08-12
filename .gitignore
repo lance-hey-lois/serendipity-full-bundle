@@ -59,4 +59,4 @@ dist/
 *.egg-info/
 
 # React build
-serendipity_engine_ui/quantum-discovery-react/build/
+serendipity_engine_ui/quantum-discovery-react/build/serendipity_engine_ui/.env.dev
