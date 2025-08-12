@@ -22,13 +22,28 @@ from search.embedding_search import phase1_embedding_search
 from search.quantum_refinement import phase2_quantum_refinement
 from validation.gemini_validator import phase3_gemini_validation_stream
 
-# Load environment variables
-load_dotenv()
+# Load environment variables - try .env.dev first, then .env
+from pathlib import Path
+env_path = Path('.env.dev')
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+    print("Loaded environment from .env.dev")
+else:
+    load_dotenv()
+    print("Loaded environment from .env")
 
 # Initialize clients
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
+
+# Configure Gemini
+google_api_key = os.getenv("GOOGLE_API_KEY")
+if not google_api_key:
+    print("WARNING: GOOGLE_API_KEY not found in environment variables")
+    gemini_model = None
+else:
+    print(f"Gemini API key loaded: {google_api_key[:10]}...")
+    genai.configure(api_key=google_api_key)
+    gemini_model = genai.GenerativeModel('gemini-2.0-flash-exp')
 
 # Initialize FastAPI
 app = FastAPI(title="Quantum Discovery API")
