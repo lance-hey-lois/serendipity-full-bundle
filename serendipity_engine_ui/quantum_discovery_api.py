@@ -21,6 +21,7 @@ import time
 from search.embedding_search import phase1_embedding_search
 from search.quantum_refinement import phase2_quantum_refinement
 from validation.gemini_validator import phase3_gemini_validation_stream
+from validation.ollama_validator import validate_with_ollama_stream
 
 # Load environment variables - try .env.dev first, then .env
 from pathlib import Path
@@ -214,25 +215,46 @@ async def search_pipeline_stream(request: SearchRequest):
                 if i > 0:
                     await asyncio.sleep(2.0)  # 2 second delay between API calls to be safe
                 
+                stream = None
+                using_ollama = False
+                
+                # Try Gemini first
                 try:
-                    print(f"Calling Gemini for profile {i}: {profile.get('name', 'Unknown')}")
+                    print(f"Trying Gemini for profile {i}: {profile.get('name', 'Unknown')}")
                     stream = phase3_gemini_validation_stream(request.query, profile, gemini_model)
-                    print(f"Stream returned: {stream is not None}")
+                    print(f"Gemini stream returned: {stream is not None}")
                 except Exception as e:
                     print(f"Gemini API error for profile {i}: {str(e)}")
-                    yield f"data: {json.dumps({'type': 'validation_complete', 'index': i, 'status': 'error', 'error': str(e)})}\n\n"
-                    continue
+                    # Fallback to Ollama
+                    try:
+                        print(f"Falling back to Ollama for profile {i}")
+                        stream = validate_with_ollama_stream(request.query, profile)
+                        using_ollama = True
+                        print(f"Ollama stream returned: {stream is not None}")
+                    except Exception as ollama_error:
+                        print(f"Ollama API error for profile {i}: {str(ollama_error)}")
+                        yield f"data: {json.dumps({'type': 'validation_complete', 'index': i, 'status': 'error', 'error': str(e)})}\n\n"
+                        continue
                 
                 if stream:
                     full_response = ""
                     reason_started = False
                     last_sent_length = 0
                     
-                    print(f"Starting Gemini validation for profile {i}: {profile.get('name', 'Unknown')}")
+                    print(f"Starting {'Ollama' if using_ollama else 'Gemini'} validation for profile {i}: {profile.get('name', 'Unknown')}")
                     
                     for chunk in stream:
-                        if chunk.text:
-                            full_response += chunk.text
+                        # Handle different chunk formats for Gemini vs Ollama
+                        chunk_text = None
+                        if using_ollama:
+                            # Ollama returns plain text chunks
+                            chunk_text = chunk if isinstance(chunk, str) else None
+                        else:
+                            # Gemini returns objects with .text attribute
+                            chunk_text = chunk.text if hasattr(chunk, 'text') else None
+                        
+                        if chunk_text:
+                            full_response += chunk_text
                             
                             # Stream explanation updates incrementally
                             if "REASON:" in full_response:
