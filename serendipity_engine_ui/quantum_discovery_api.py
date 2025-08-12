@@ -211,7 +211,9 @@ async def search_pipeline_stream(request: SearchRequest):
                 yield f"data: {json.dumps({'type': 'validation_start', 'index': i})}\n\n"
                 
                 try:
+                    print(f"Calling Gemini for profile {i}: {profile.get('name', 'Unknown')}")
                     stream = phase3_gemini_validation_stream(request.query, profile, gemini_model)
+                    print(f"Stream returned: {stream is not None}")
                 except Exception as e:
                     print(f"Gemini API error for profile {i}: {str(e)}")
                     yield f"data: {json.dumps({'type': 'validation_complete', 'index': i, 'status': 'error', 'error': str(e)})}\n\n"
@@ -250,6 +252,9 @@ async def search_pipeline_stream(request: SearchRequest):
                     
                     # Send final validation result
                     yield f"data: {json.dumps({'type': 'validation_complete', 'index': i, 'status': status})}\n\n"
+                else:
+                    print(f"Stream was None for profile {i}")
+                    yield f"data: {json.dumps({'type': 'validation_complete', 'index': i, 'status': 'error', 'error': 'Gemini returned no response'})}\n\n"
             
             # Send completion status
             total_time = time.time() - start_time

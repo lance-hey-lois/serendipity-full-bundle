@@ -50,6 +50,9 @@ def phase3_gemini_validation_stream(query: str, profile: dict, gemini_model):
         return response
         
     except Exception as e:
+        print(f"ERROR in phase3_gemini_validation_stream: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
