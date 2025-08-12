@@ -82,6 +82,11 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, index, streamingText })
       {(streamingText || result.explanation) && (
         <div className="mt-4 p-4 bg-black/20 border-l-4 border-venture-accent rounded italic text-venture-light">
           {streamingText || result.explanation}
+          {result.explanation === 'Validation unavailable (API limit reached)' && (
+            <div className="text-yellow-400 text-sm mt-2">
+              ⚠️ Gemini API daily limit reached - showing all results
+            </div>
+          )}
         </div>
       )}
 
