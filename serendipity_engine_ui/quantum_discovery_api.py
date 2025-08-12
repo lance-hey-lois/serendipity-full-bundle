@@ -212,7 +212,7 @@ async def search_pipeline_stream(request: SearchRequest):
                 
                 # Add delay between Gemini calls to avoid rate limiting
                 if i > 0:
-                    await asyncio.sleep(1.0)  # 1 second delay between API calls
+                    await asyncio.sleep(2.0)  # 2 second delay between API calls to be safe
                 
                 try:
                     print(f"Calling Gemini for profile {i}: {profile.get('name', 'Unknown')}")

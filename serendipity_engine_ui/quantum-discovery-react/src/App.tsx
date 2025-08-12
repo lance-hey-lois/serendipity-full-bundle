@@ -112,16 +112,22 @@ function App() {
             // Update results with the final text and status
             setResults(prevResults => prevResults.map(r => {
               if (r.index === data.index) {
-                console.log(`Updating result ${r.index} with status ${data.status}, keeping skills:`, r.skills);
-                return { ...r, status: data.status as any, explanation: finalText };
+                console.log(`Updating result ${r.index} with status ${data.status}, explanation: "${finalText}", keeping skills:`, r.skills);
+                // If there's an error but we have streaming text, keep it as explanation
+                const explanation = finalText || (data.status === 'error' ? 'Validation error' : '');
+                return { ...r, status: data.status as any, explanation };
               }
               return r;
             }));
             
-            // Remove the streaming text
-            const newTexts = { ...prev };
-            delete newTexts[data.index!];
-            return newTexts;
+            // Only remove streaming text if validation succeeded or was rejected properly
+            // Keep it for errors so the partial text remains visible
+            if (data.status !== 'error' || !prev[data.index!]) {
+              const newTexts = { ...prev };
+              delete newTexts[data.index!];
+              return newTexts;
+            }
+            return prev;
           });
           break;
 
