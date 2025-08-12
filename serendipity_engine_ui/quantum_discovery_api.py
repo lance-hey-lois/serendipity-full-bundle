@@ -210,6 +210,10 @@ async def search_pipeline_stream(request: SearchRequest):
                 # Start validation for this result
                 yield f"data: {json.dumps({'type': 'validation_start', 'index': i})}\n\n"
                 
+                # Add delay between Gemini calls to avoid rate limiting
+                if i > 0:
+                    await asyncio.sleep(1.0)  # 1 second delay between API calls
+                
                 try:
                     print(f"Calling Gemini for profile {i}: {profile.get('name', 'Unknown')}")
                     stream = phase3_gemini_validation_stream(request.query, profile, gemini_model)

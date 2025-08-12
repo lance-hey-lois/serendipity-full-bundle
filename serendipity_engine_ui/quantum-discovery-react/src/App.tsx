@@ -105,16 +105,18 @@ function App() {
           break;
 
         case 'validation_complete':
-          // Update results with the final explanation
+          // Update results and streaming texts together to avoid stale closures
           setStreamingTexts(prev => {
             const finalText = prev[data.index!] || '';
             
-            // Update results with the final text
-            setResults(results => results.map(r => 
-              r.index === data.index 
-                ? { ...r, status: data.status as any, explanation: finalText }
-                : r
-            ));
+            // Update results with the final text and status
+            setResults(prevResults => prevResults.map(r => {
+              if (r.index === data.index) {
+                console.log(`Updating result ${r.index} with status ${data.status}, keeping skills:`, r.skills);
+                return { ...r, status: data.status as any, explanation: finalText };
+              }
+              return r;
+            }));
             
             // Remove the streaming text
             const newTexts = { ...prev };
