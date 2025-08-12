@@ -223,11 +223,19 @@ async def search_pipeline_stream(request: SearchRequest):
                     print(f"Trying Gemini for profile {i}: {profile.get('name', 'Unknown')}")
                     stream = phase3_gemini_validation_stream(request.query, profile, gemini_model)
                     print(f"Gemini stream returned: {stream is not None}")
+                    
+                    # If Gemini returned None (API limit), try Ollama
+                    if stream is None:
+                        print(f"Gemini returned None, falling back to Ollama for profile {i}")
+                        stream = validate_with_ollama_stream(request.query, profile)
+                        using_ollama = True
+                        print(f"Ollama stream returned: {stream is not None}")
+                        
                 except Exception as e:
                     print(f"Gemini API error for profile {i}: {str(e)}")
-                    # Fallback to Ollama
+                    # Fallback to Ollama on exception too
                     try:
-                        print(f"Falling back to Ollama for profile {i}")
+                        print(f"Falling back to Ollama due to exception for profile {i}")
                         stream = validate_with_ollama_stream(request.query, profile)
                         using_ollama = True
                         print(f"Ollama stream returned: {stream is not None}")
