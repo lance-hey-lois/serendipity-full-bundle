@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  # Quantum microservice
+  quantum:
+    build:
+      context: ./serendipity_engine_ui
+      dockerfile: Dockerfile.quantum
+    container_name: quantum-api
+    environment:
+      - SF_API_KEY=${SF_API_KEY}
+      - XANADU_DEVICE=${XANADU_DEVICE:-X8}
+      - XANADU_SHOTS=${XANADU_SHOTS:-100}
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=info
+    ports:
+      - "8077:8077"
+    volumes:
+      - ./serendipity_engine_ui:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8077/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - quantum-network
+
+  # Optional: Next.js frontend (uncomment when ready)
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: quantum-frontend
+  #   environment:
+  #     - QUANTUM_API_URL=http://quantum:8077
+  #     - NODE_ENV=production
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     quantum:
+  #       condition: service_healthy
+  #   networks:
+  #     - quantum-network
+
+  # Optional: Streamlit UI (existing)
+  # streamlit:
+  #   build:
+  #     context: ./serendipity_engine_ui
+  #     dockerfile: Dockerfile.streamlit
+  #   container_name: streamlit-ui
+  #   environment:
+  #     - SF_API_KEY=${SF_API_KEY}
+  #     - XANADU_DEVICE=${XANADU_DEVICE:-X8}
+  #   ports:
+  #     - "8501:8501"
+  #   volumes:
+  #     - ./serendipity_engine_ui:/app
+  #   networks:
+  #     - quantum-network
+
+networks:
+  quantum-network:
+    driver: bridge
