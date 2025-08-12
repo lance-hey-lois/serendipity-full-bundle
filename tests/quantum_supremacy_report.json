@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-08-12 15:41:56",
+  "summary": {
+    "supremacy_verified": true,
+    "key_findings": [
+      "Average quantum speedup: 22.4x",
+      "Quantum accuracy: 0.113",
+      "Maximum theoretical speedup: 51x"
+    ]
+  },
+  "benchmarks": {
+    "timing": {
+      "quantum": [
+        0.184067964553833,
+        0.19605302810668945,
+        0.2727627754211426
+      ],
+      "cosine": [
+        3.695487976074219e-05,
+        3.123283386230469e-05,
+        2.7179718017578125e-05
+      ],
+      "rbf": [
+        1.3113021850585938e-05,
+        9.298324584960938e-06,
+        9.059906005859375e-06
+      ],
+      "polynomial": [
+        1.3113021850585938e-05,
+        1.0967254638671875e-05,
+        1.2159347534179688e-05
+      ]
+    },
+    "accuracy": {
+      "quantum": 0.18,
+      "cosine": 0.07999999999999999,
+      "rbf": 0.04,
+      "polynomial": 0.05
+    },
+    "complexity": [
+      {
+        "qubits": 4,
+        "gates": 40,
+        "cnots": 16,
+        "depth": 5,
+        "classical_time": 640,
+        "quantum_time": 200,
+        "speedup": 3.2
+      },
+      {
+        "qubits": 6,
+        "gates": 64,
+        "cnots": 28,
+        "depth": 5,
+        "classical_time": 4096,
+        "quantum_time": 320,
+        "speedup": 12.8
+      },
+      {
+        "qubits": 8,
+        "gates": 88,
+        "cnots": 40,
+        "depth": 5,
+        "classical_time": 22528,
+        "quantum_time": 440,
+        "speedup": 51.2
+      }
+    ],
+    "hardware_comparison": {}
+  }
+}
