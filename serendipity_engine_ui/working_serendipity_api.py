@@ -130,9 +130,9 @@ async def serendipity_search(request: SerendipitySearchRequest):
         user_vec = l2_normalize(np.array(user['embedding']))
         query_vec = l2_normalize(query_embedding)
         
-        # Quantum entanglement
-        alpha = 0.3  # User influence
-        beta = 0.7   # Query influence
+        # Quantum entanglement - stronger query influence for better diversity
+        alpha = 0.15  # User influence (reduced)
+        beta = 0.85   # Query influence (increased)
         entangled = l2_normalize(alpha * user_vec + beta * query_vec)
         
         # Load candidates
