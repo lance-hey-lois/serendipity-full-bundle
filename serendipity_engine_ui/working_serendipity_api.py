@@ -42,7 +42,7 @@ openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 # Initialize quantum discovery (singleton)
 discovery = QuantumDiscoveryV3(
     n_qubits=8,
-    reducer_path='learning/two_tower_reducer.pt'
+    reducer_path='learning/learned_reducer.pt'
 )
 
 
