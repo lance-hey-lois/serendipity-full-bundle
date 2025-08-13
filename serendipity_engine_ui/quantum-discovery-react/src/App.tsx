@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import ResultCard from './components/ResultCard';
 import PipelineStatus from './components/PipelineStatus';
+import SerendipityToggle from './components/SerendipityToggle';
+import SerendipityDisplay from './components/SerendipityDisplay';
 import { User, SearchResult, PipelineStatus as PipelineStatusType, SSEMessage } from './types';
 import { SSEClient } from './utils/sse';
 
@@ -17,6 +19,13 @@ function App() {
   const [pipelineTimes, setPipelineTimes] = useState<any>({});
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const sseClientRef = useRef<SSEClient | null>(null);
+  
+  // Serendipity mode state
+  const [serendipityEnabled, setSerendipityEnabled] = useState<boolean>(false);
+  const [serendipityResults, setSerendipityResults] = useState<any[]>([]);
+  const [serendipityLoading, setSerendipityLoading] = useState<boolean>(false);
+  const [serendipityStats, setSerendipityStats] = useState<any>(null);
+  const [serendipityPerformance, setSerendipityPerformance] = useState<any>(null);
 
   // Fetch users on mount
   useEffect(() => {
