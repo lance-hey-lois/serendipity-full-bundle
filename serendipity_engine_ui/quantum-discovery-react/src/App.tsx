@@ -46,16 +46,15 @@ function App() {
     setSerendipityLoading(true);
     
     try {
-      const response = await fetch('http://localhost:8000/api/serendipity/search', {
+      const response = await fetch('http://localhost:8001/api/serendipity/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           query: searchQuery,
-          user_id: selectedUser,
-          search_depth: searchDepth,
-          result_limit: resultLimit
+          userId: selectedUser,
+          limit: resultLimit
         })
       });
       
