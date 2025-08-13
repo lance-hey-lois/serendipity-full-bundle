@@ -4,7 +4,7 @@ import ResultCard from './components/ResultCard';
 import PipelineStatus from './components/PipelineStatus';
 import SerendipityToggle from './components/SerendipityToggle';
 import SerendipityDisplay from './components/SerendipityDisplay';
-import { User, SearchResult, PipelineStatus as PipelineStatusType, SSEMessage } from './types';
+import { User, SearchResult, PipelineStatus as PipelineStatusType, SSEMessage, SerendipityResult } from './types';
 import { SSEClient } from './utils/sse';
 
 function App() {
@@ -22,7 +22,7 @@ function App() {
   
   // Serendipity mode state
   const [serendipityEnabled, setSerendipityEnabled] = useState<boolean>(false);
-  const [serendipityResults, setSerendipityResults] = useState<any[]>([]);
+  const [serendipityResults, setSerendipityResults] = useState<SerendipityResult[]>([]);
   const [serendipityLoading, setSerendipityLoading] = useState<boolean>(false);
   const [serendipityStats, setSerendipityStats] = useState<any>(null);
   const [serendipityPerformance, setSerendipityPerformance] = useState<any>(null);
@@ -40,6 +40,56 @@ function App() {
       .catch(err => console.error('Failed to fetch users:', err));
   }, []);
 
+  const handleSerendipitySearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setSerendipityLoading(true);
+    
+    try {
+      const response = await fetch('http://localhost:8001/api/serendipity/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          user_id: selectedUser,
+          search_depth: searchDepth,
+          result_limit: resultLimit
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSerendipityResults(data.results || []);
+        setSerendipityStats(data.statistics || {});
+        setSerendipityPerformance(data.performance || {});
+      } else {
+        console.error('Serendipity search failed:', response.statusText);
+        // Fallback to mock data
+        setSerendipityResults([
+          {
+            slug: "quantum_researcher_mock",
+            name: "Dr. Sarah Chen (Mock)",
+            blurb: "Quantum computing researcher with expertise in photonic systems",
+            quantumScore: 0.92,
+            classicalScore: 0.76,
+            noveltyScore: 0.88,
+            serendipityScore: 0.91,
+            explanation: "Mock quantum serendipity result - high coherence detected through cross-domain pattern matching",
+            location: "Stanford, CA",
+            company: "Quantum Ventures Lab",
+            title: "Senior Research Scientist"
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Serendipity search error:', error);
+    } finally {
+      setSerendipityLoading(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
@@ -49,6 +99,11 @@ function App() {
     setPipelineStatus({ phase: 'embeddings' });
     setPipelineTimes({});
     setIsSearching(true);
+    
+    // If serendipity mode is enabled, also run serendipity search
+    if (serendipityEnabled) {
+      handleSerendipitySearch();
+    }
 
     // Close any existing SSE connection
     if (sseClientRef.current) {

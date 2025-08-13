@@ -38,3 +38,17 @@ export interface SSEMessage {
   totalTime?: number;
   validatedCount?: number;
 }
+
+export interface SerendipityResult {
+  slug: string;
+  name: string;
+  blurb?: string;
+  quantumScore: number;
+  classicalScore: number;
+  noveltyScore: number;
+  serendipityScore: number;
+  explanation: string;
+  location?: string;
+  company?: string;
+  title?: string;
+}
