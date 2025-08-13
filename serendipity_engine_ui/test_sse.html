@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Test</title>
+</head>
+<body>
+    <h1>SSE Test</h1>
+    <button onclick="testSSE()">Test SSE</button>
+    <div id="output"></div>
+    
+    <script>
+        async function testSSE() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Starting test...<br>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/search/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: 'AI researcher',
+                        userId: 'anirudh',
+                        searchDepth: 'ALL Public Profiles',
+                        resultLimit: 5
+                    })
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const text = decoder.decode(value, { stream: true });
+                    buffer += text;
+                    
+                    // Process complete messages
+                    const messages = buffer.split('\n\n');
+                    buffer = messages[messages.length - 1];
+                    
+                    for (let i = 0; i < messages.length - 1; i++) {
+                        const message = messages[i];
+                        if (message.startsWith('data: ')) {
+                            const data = message.slice(6);
+                            try {
+                                const parsed = JSON.parse(data);
+                                output.innerHTML += `${parsed.type}: ${JSON.stringify(parsed)}<br>`;
+                                console.log('Received:', parsed);
+                            } catch (e) {
+                                console.error('Parse error:', e);
+                            }
+                        }
+                    }
+                }
+                
+                output.innerHTML += 'Stream complete<br>';
+            } catch (error) {
+                output.innerHTML += `Error: ${error}<br>`;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "overall_status": "FAIL",
+  "checks": {
+    "python_version": true,
+    "node_npm": true,
+    "environment": true,
+    "mongodb": false,
+    "python_deps": false,
+    "react_deps": true,
+    "api_imports": true
+  },
+  "ready_for_startup": false,
+  "timestamp": 1755070366.408451
+}
