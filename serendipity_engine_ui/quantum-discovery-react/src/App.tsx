@@ -176,7 +176,7 @@ function App() {
       </div>
 
       <div className="container mx-auto px-4 pb-8">
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
           {/* Search Settings */}
           <div className="bg-venture-card/80 backdrop-blur rounded-xl p-6 border border-venture-border">
             <h3 className="text-xl font-bold mb-4 text-venture-accent">🎯 Search Settings</h3>
@@ -229,6 +229,15 @@ function App() {
             </div>
           </div>
 
+          {/* Serendipity Toggle */}
+          <div className="bg-venture-card/80 backdrop-blur rounded-xl p-6 border border-venture-border">
+            <h3 className="text-xl font-bold mb-4 text-venture-accent">🌌 Quantum Mode</h3>
+            <SerendipityToggle 
+              enabled={serendipityEnabled}
+              onChange={setSerendipityEnabled}
+            />
+          </div>
+
           {/* Search Query */}
           <div className="md:col-span-2 bg-venture-card/80 backdrop-blur rounded-xl p-6 border border-venture-border">
             <h3 className="text-xl font-bold mb-4 text-venture-accent">🔍 Search Query</h3>
@@ -259,10 +268,23 @@ function App() {
           <PipelineStatus status={pipelineStatus} times={pipelineTimes} />
         )}
 
-        {/* Results */}
+        {/* Serendipity Results */}
+        {serendipityEnabled && serendipityResults.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-6 text-venture-accent">🌌 Quantum Serendipity Results</h2>
+            <SerendipityDisplay 
+              results={serendipityResults}
+              loading={serendipityLoading}
+            />
+          </div>
+        )}
+
+        {/* Regular Results */}
         {results.length > 0 && (
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-venture-accent">🎯 Search Results</h2>
+            <h2 className="text-2xl font-bold mb-6 text-venture-accent">
+              {serendipityEnabled ? '🔍 Classical Results' : '🎯 Search Results'}
+            </h2>
             <div className="space-y-4">
               {results.map((result) => (
                 <ResultCard
