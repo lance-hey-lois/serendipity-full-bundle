@@ -83,6 +83,12 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "serendipity-v3"}
 
+@app.get("/api/users")
+async def get_users():
+    """Get users for frontend dropdown"""
+    users = list(db["users"].find({}, {"userId": 1, "name": 1}))
+    return [{"userId": user.get("userId"), "name": user.get("name")} for user in users]
+
 
 @app.post("/api/serendipity/search", response_model=SerendipitySearchResponse)
 async def serendipity_search(request: SerendipitySearchRequest):

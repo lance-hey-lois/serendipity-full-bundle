@@ -29,7 +29,7 @@ function App() {
 
   // Fetch users on mount
   useEffect(() => {
-    fetch('http://localhost:8078/api/users')
+    fetch('http://localhost:8079/api/users')
       .then(res => res.json())
       .then(data => {
         setUsers(data);
@@ -46,7 +46,7 @@ function App() {
     setSerendipityLoading(true);
     
     try {
-      const response = await fetch('http://localhost:8078/api/serendipity/search', {
+      const response = await fetch('http://localhost:8079/api/serendipity/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ function App() {
 
     // Connect to SSE endpoint
     await sseClient.connect(
-      'http://localhost:8078/api/search/stream',
+      'http://localhost:8079/api/search/stream',
       {
         query: searchQuery,
         userId: selectedUser,

@@ -1,1 +1,0 @@
-# Learning Module - Trained reducers and models
