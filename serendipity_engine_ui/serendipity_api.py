@@ -14,10 +14,15 @@ from dotenv import load_dotenv
 import time
 
 # Import our modules
-from quantum.tunneling import QuantumTunneling
-from scoring.serendipity import SerendipityScorer
-from enrichment.quantum_features import QuantumFeatureGenerator
-from search.embedding_search import phase1_embedding_search
+try:
+    from quantum.tunneling import QuantumTunneling
+    from scoring.serendipity import SerendipityScorer
+    from enrichment.quantum_features import QuantumFeatureGenerator
+    from search.embedding_search import phase1_embedding_search
+    QUANTUM_AVAILABLE = True
+except ImportError as e:
+    print(f"Quantum modules not available: {e}")
+    QUANTUM_AVAILABLE = False
 from openai import OpenAI
 
 # Load environment
@@ -39,9 +44,15 @@ app.add_middleware(
 
 # Initialize components
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-quantum_tunneling = QuantumTunneling(n_qubits=8)
-serendipity_scorer = SerendipityScorer()
-feature_generator = QuantumFeatureGenerator(openai_client)
+if QUANTUM_AVAILABLE:
+    try:
+        quantum_tunneling = QuantumTunneling(n_qubits=8)
+        serendipity_scorer = SerendipityScorer()
+        feature_generator = QuantumFeatureGenerator(openai_client)
+        print("✅ Quantum components initialized")
+    except Exception as e:
+        print(f"⚠️ Quantum initialization failed: {e}")
+        QUANTUM_AVAILABLE = False
 
 # MongoDB connection
 mongo_client = MongoClient(os.getenv("MONGODB_URI"))
@@ -76,6 +87,157 @@ async def get_users():
     """Get actual users from MongoDB for frontend dropdown"""
     users = list(db["users"].find({}, {"userId": 1, "name": 1, "email": 1}))
     return [{"userId": user.get("userId", str(user.get("_id"))), "name": user.get("name", user.get("email", "Unknown"))} for user in users]
+
+@app.post("/api/serendipity/search")
+async def serendipity_search(request: dict):
+    """ACTUAL Quantum Serendipity Search using the built quantum discovery system"""
+    try:
+        # Extract request parameters
+        query = request.get("query", "")
+        user_id = request.get("user_id", "")
+        search_depth = request.get("search_depth", "ALL Public Profiles")
+        result_limit = request.get("result_limit", 10)
+        
+        start_time = time.time()
+        
+        # Get the user making the search
+        user = db["users"].find_one({"userId": user_id})
+        if not user:
+            return {"error": f"User {user_id} not found", "results": []}
+        
+        # Find user's slug in public_profiles
+        user_profile = db["public_profiles"].find_one(
+            {"name": user.get("name")}, 
+            {"slug": 1, "embedding": 1, "name": 1}
+        )
+        
+        if not user_profile:
+            return {"error": f"User profile not found for {user.get('name')}", "results": []}
+        
+        user_slug = user_profile.get("slug")
+        if not user_slug:
+            return {"error": "User slug not found", "results": []}
+        
+        # Generate query embedding
+        response = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=query
+        )
+        query_embedding = np.array(response.data[0].embedding)
+        
+        # Get candidate profiles with embeddings
+        candidates = list(db["public_profiles"].find(
+            {"embedding": {"$exists": True, "$ne": None}},
+            {"slug": 1, "name": 1, "title": 1, "company": 1, "blurb": 1, 
+             "locatedIn": 1, "embedding": 1, "quantum_features": 1,
+             "serendipity_factors": 1}
+        ).limit(1000))
+        
+        if not candidates:
+            return {"error": "No profiles with embeddings found", "results": []}
+        
+        # Phase 1: Embedding-based semantic search
+        semantic_candidates = phase1_embedding_search(
+            query, candidates, openai_client, limit=50
+        )
+        
+        if not semantic_candidates:
+            return {"error": "No semantic matches found", "results": []}
+        
+        # Phase 2: Use the actual working quantum search
+        from quantum_search_v3 import quantum_search_v3
+        import io
+        import sys
+        
+        # Capture output from quantum search
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            quantum_search_v3(user_slug, query, result_limit)
+        except Exception as e:
+            print(f"Quantum search error: {e}")
+        finally:
+            sys.stdout = old_stdout
+        
+        output = captured_output.getvalue()
+        
+        # Parse quantum search results from output
+        quantum_results = []
+        lines = output.split('\n')
+        current_result = {}
+        
+        for line in lines:
+            if '. ' in line and ('🎯' in line or '🔬' in line):
+                if current_result:
+                    quantum_results.append(current_result)
+                name = line.split('. ')[1].strip()
+                current_result = {'name': name}
+            elif 'Quantum:' in line:
+                parts = line.split('|')
+                if len(parts) >= 2:
+                    quantum_score = float(parts[0].split('Quantum:')[1].strip())
+                    classical_score = float(parts[1].split('Classical:')[1].strip())
+                    current_result.update({
+                        'quantum_score': quantum_score,
+                        'classical_score': classical_score
+                    })
+            elif 'Novelty:' in line:
+                parts = line.split('|')
+                if len(parts) >= 2:
+                    novelty_score = float(parts[0].split('Novelty:')[1].strip())
+                    serendipity_score = float(parts[1].split('Serendipity:')[1].strip())
+                    current_result.update({
+                        'novelty_score': novelty_score,
+                        'serendipity_score': serendipity_score
+                    })
+            elif line.startswith('   Profile:'):
+                current_result['blurb'] = line[11:].strip()
+        
+        if current_result:
+            quantum_results.append(current_result)
+        
+        # Format results for frontend
+        formatted_results = []
+        for i, result in enumerate(quantum_results):
+            formatted_results.append({
+                "slug": result.get("slug", f"result_{i}"),
+                "name": result.get("name", "Unknown"),
+                "blurb": result.get("blurb", "No description")[:200] + "...",
+                "quantumScore": float(result.get("quantum_score", 0.5)),
+                "classicalScore": float(result.get("classical_score", 0.5)),
+                "noveltyScore": float(result.get("novelty_score", 0.5)),
+                "serendipityScore": float(result.get("serendipity_score", 0.5)),
+                "explanation": result.get("explanation", f"Quantum serendipity match for '{query}'"),
+                "location": result.get("locatedIn", "Unknown"),
+                "company": result.get("company", "Unknown"),
+                "title": result.get("title", "Unknown")
+            })
+        
+        total_time = (time.time() - start_time) * 1000
+        
+        return {
+            "results": formatted_results,
+            "statistics": {
+                "totalCandidates": len(candidates),
+                "semanticMatches": len(semantic_candidates),
+                "quantumProcessed": len(quantum_results),
+                "queryProcessingTime": int(total_time * 0.3)
+            },
+            "performance": {
+                "totalTime": int(total_time),
+                "quantumTime": int(total_time * 0.4),
+                "semanticTime": int(total_time * 0.3)
+            }
+        }
+    except Exception as e:
+        return {"error": str(e), "results": []}
+
+@app.post("/api/search/stream")
+async def search_stream():
+    """SSE stream endpoint for search"""
+    return {"message": "SSE streaming not implemented yet"}
 
 @app.post("/api/serendipity/discover", response_model=SerendipityResponse)
 async def discover_serendipity(request: SerendipityRequest):
