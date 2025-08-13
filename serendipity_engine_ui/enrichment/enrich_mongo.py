@@ -54,7 +54,8 @@ def enrich_all_profiles(limit: int = None, batch_size: int = 100):
     enriched_count = 0
     error_count = 0
     
-    cursor = db["public_profiles"].find(query, no_cursor_timeout=True)
+    # Atlas doesn't allow no_cursor_timeout in lower tiers
+    cursor = db["public_profiles"].find(query)
     if limit:
         cursor = cursor.limit(limit)
     
